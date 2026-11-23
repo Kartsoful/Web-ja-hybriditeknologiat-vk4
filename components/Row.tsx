@@ -31,7 +31,7 @@ export default function Row({ item, onPress, remove }: TodoItemProps) {
           name="trash"
           onPress={() => remove(item)}
           style={styles.trashIcon}
-          size={16}
+          size={18}
           color="red"
         />
       </Pressable>

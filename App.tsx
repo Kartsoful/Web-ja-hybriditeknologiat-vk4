@@ -45,7 +45,6 @@ export default function App() {
   };
 
   const handlePress = async (item: Task) => {
-    if (!taskList) return;
     const newCompleted = item.completed === 0 ? 1 : 0;
     const updatedTaskList = taskList.map((task) => {
       if (task.id === item.id) {
@@ -61,7 +60,6 @@ export default function App() {
   };
 
   const removeTodo = async (item: Task) => {
-    if (!taskList) return;
     const updatedTaskList = taskList.filter((task) => task.id !== item.id);
     setTaskList(updatedTaskList);
     await AsyncStorage.setItem("tasks", JSON.stringify(updatedTaskList));
