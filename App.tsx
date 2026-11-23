@@ -11,7 +11,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Task } from "./types/task";
 import { useEffect, useState } from "react";
 import Row from "./components/Row";
-import * as SQLite from "expo-sqlite";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function App() {
@@ -27,13 +26,6 @@ export default function App() {
     };
     initList();
   }, []);
-
-  const loadTodos = async () => {
-    const storedTasks = await AsyncStorage.getItem("tasks");
-    if (storedTasks) {
-      setTaskList(JSON.parse(storedTasks));
-    }
-  };
 
   const addTodo = async () => {
     if (!input.trim() || !taskList) return;
@@ -68,6 +60,13 @@ export default function App() {
     // console.log("Updating", item);
   };
 
+  const removeTodo = async (item: Task) => {
+    if (!taskList) return;
+    const updatedTaskList = taskList.filter((task) => task.id !== item.id);
+    setTaskList(updatedTaskList);
+    await AsyncStorage.setItem("tasks", JSON.stringify(updatedTaskList));
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View>
@@ -88,7 +87,7 @@ export default function App() {
       <FlatList<Task>
         data={taskList}
         keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => <Row item={item} onPress={handlePress} />}
+        renderItem={({ item }) => <Row item={item} onPress={handlePress} remove={removeTodo} />}
       />
       <StatusBar style="auto" />
     </SafeAreaView>
