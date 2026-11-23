@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Task } from "../types/task";
-import * as SQLite from "expo-sqlite";
 
 interface TodoItemProps {
   item: Task;

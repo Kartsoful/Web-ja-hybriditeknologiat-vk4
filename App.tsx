@@ -12,58 +12,60 @@ import { Task } from "./types/task";
 import { useEffect, useState } from "react";
 import Row from "./components/Row";
 import * as SQLite from "expo-sqlite";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function App() {
-  const [db, setDb] = useState<SQLite.SQLiteDatabase | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskList, setTaskList] = useState<Task[]>([]);
   const [input, setInput] = useState<string>("");
 
   useEffect(() => {
-    const initDb = async () => {
-      const database = await SQLite.openDatabaseAsync("todoTasks.db");
-      setDb(database);
-
-      await database.execAsync(`
-        CREATE TABLE IF NOT EXISTS todos (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          text TEXT NOT NULL,
-          completed INTEGER DEFAULT 0
-        );
-      `);
-      loadTodos(database);
+    const initList = async () => {
+      const storedTasks = await AsyncStorage.getItem("tasks");
+      if (storedTasks) {
+        setTaskList(JSON.parse(storedTasks));
+      }
     };
-
-    initDb();
+    initList();
   }, []);
 
-  const loadTodos = async (database: SQLite.SQLiteDatabase) => {
-    const result = await database.getAllAsync<Task>(
-      "SELECT * FROM todos ORDER BY id DESC",
-    );
-    setTasks(result);
+  const loadTodos = async () => {
+    const storedTasks = await AsyncStorage.getItem("tasks");
+    if (storedTasks) {
+      setTaskList(JSON.parse(storedTasks));
+    }
   };
 
   const addTodo = async () => {
-    if (!input.trim() || !db) return;
+    if (!input.trim() || !taskList) return;
 
-    await db.runAsync("INSERT INTO todos (text) VALUES (?)", input);
+    const newTask: Task = {
+      id: taskList.length > 0 ? taskList[taskList.length - 1].id + 1 : 1,
+      text: input.trim(),
+      completed: 0,
+    };
+
+    const updatedTaskList = [...taskList, newTask];
+    setTaskList(updatedTaskList);
+    await AsyncStorage.setItem("tasks", JSON.stringify(updatedTaskList));
+
     setInput("");
-    loadTodos(db);
     // console.log("Adding");
   };
 
   const handlePress = async (item: Task) => {
-    if (!db) return;
+    if (!taskList) return;
     const newCompleted = item.completed === 0 ? 1 : 0;
+    const updatedTaskList = taskList.map((task) => {
+      if (task.id === item.id) {
+        return { ...task, completed: newCompleted };
+      }
+      return task;
+    });
+    setTaskList(updatedTaskList);
+    await AsyncStorage.setItem("tasks", JSON.stringify(updatedTaskList));
 
     // console.log("´newCompleted", newCompleted);
-    await db.runAsync("UPDATE todos SET completed = ? WHERE id = ?", [
-      newCompleted,
-      item.id,
-    ]);
-
     // console.log("Updating", item);
-    loadTodos(db);
   };
 
   return (
@@ -84,7 +86,7 @@ export default function App() {
         </View>
       </View>
       <FlatList<Task>
-        data={tasks}
+        data={taskList}
         keyExtractor={(item) => item.id.toString()}
         renderItem={({ item }) => <Row item={item} onPress={handlePress} />}
       />
